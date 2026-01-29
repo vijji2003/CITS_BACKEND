@@ -26,29 +26,36 @@ class ContactMessageCreate(APIView):
         if serializer.is_valid():
             contact = serializer.save()
 
-            # Send mail to admin
-            send_mail(
-                subject=f"New Contact: {contact.subject}",
-                message=f"""
+            try:
+                send_mail(
+                    subject=f"New Contact: {contact.subject}",
+                    message=f"""
 Name: {contact.name}
 Email: {contact.email}
-phone:{contact.phone}
+Phone: {contact.phone}
 
 Message:
 {contact.message}
-                """,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.EMAIL_HOST_USER],
-                fail_silently=False,
-            )
+""",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[settings.EMAIL_HOST_USER],
+                    fail_silently=False,
+                )
+                email_status = "sent"
+            except Exception as e:
+                print("Email error:", e)
+                email_status = "failed"
 
             return Response(
-                {"message": "Message sent successfully"},
+                {
+                    "message": "Contact saved",
+                    "email_status": email_status
+                },
                 status=status.HTTP_201_CREATED
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 class MOUListAPIView(ListAPIView):
     serializer_class = MOUSerializer
 
