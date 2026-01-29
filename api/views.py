@@ -57,9 +57,13 @@ class MOUListAPIView(ListAPIView):
     
 class GalleryImageListAPIView(ListAPIView):
     serializer_class = GalleryImageSerializer
+    queryset = GalleryImage.objects.all().order_by("-created_at")
 
-    def get_queryset(self):
-        return GalleryImage.objects.all().order_by('-created_at')
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
     
 class ProjectListAPIView(APIView):
     def get(self, request):
