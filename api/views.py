@@ -26,6 +26,7 @@ from .serializers import (
     CpuInquirySerializer,
 )
 
+#send messages to telegram 
 
 def send_telegram(bot_token, chat_id, text):
     try:
