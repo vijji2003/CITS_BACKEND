@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.decorators import api_view
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 import requests
 
 from .models import (
@@ -13,6 +14,7 @@ from .models import (
     GalleryImage,
     Project,
     CommunityItem,
+    CpuInquiry,
 )
 from .serializers import (
     CareerApplicationSerializer,
@@ -28,16 +30,18 @@ from .serializers import (
 def send_telegram(bot_token, chat_id, text):
     try:
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        requests.post(
-            url,
-            data={"chat_id": chat_id, "text": text},
-            timeout=5,
-        )
+        requests.post(url, data={"chat_id": chat_id, "text": text}, timeout=5)
     except:
         pass
 
 
 class CareerApplicationCreate(APIView):
+
+    def get(self, request):
+        qs = CareerApplication.objects.all().order_by("-applied_at")
+        serializer = CareerApplicationSerializer(qs, many=True)
+        return Response(serializer.data)
+
     def post(self, request):
         serializer = CareerApplicationSerializer(data=request.data)
         if serializer.is_valid():
@@ -52,7 +56,7 @@ class CareerApplicationCreate(APIView):
             send_telegram(
                 settings.TELEGRAM_CAREER_BOT_TOKEN,
                 settings.TELEGRAM_CAREER_CHAT_ID,
-                f"📄 Career Application\n\n"
+                f"Career Application\n\n"
                 f"Name: {obj.full_name}\n"
                 f"Email: {obj.email}\n"
                 f"Phone: {obj.phone}\n"
@@ -61,7 +65,7 @@ class CareerApplicationCreate(APIView):
                 f"Year: {obj.year_of_passing}\n"
                 f"Experience: {obj.experience}\n"
                 f"Skills: {obj.skills}\n\n"
-                f"📎 Resume PDF:\n{resume_url}"
+                f"Resume:\n{resume_url}"
             )
 
             return Response(
@@ -71,8 +75,22 @@ class CareerApplicationCreate(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, pk):
+        obj = get_object_or_404(CareerApplication, pk=pk)
+        obj.delete()
+        return Response(
+            {"message": "Career application deleted"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
 
 class ContactMessageCreate(APIView):
+
+    def get(self, request):
+        qs = ContactMessage.objects.all().order_by("-created_at")
+        serializer = ContactMessageSerializer(qs, many=True)
+        return Response(serializer.data)
+
     def post(self, request):
         serializer = ContactMessageSerializer(data=request.data)
         if serializer.is_valid():
@@ -81,7 +99,7 @@ class ContactMessageCreate(APIView):
             send_telegram(
                 settings.TELEGRAM_CONTACT_BOT_TOKEN,
                 settings.TELEGRAM_CONTACT_CHAT_ID,
-                f"📩 Contact Message\n\n"
+                f"Contact Message\n\n"
                 f"Name: {obj.name}\n"
                 f"Email: {obj.email}\n"
                 f"Phone: {obj.phone}\n"
@@ -95,6 +113,57 @@ class ContactMessageCreate(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        obj = get_object_or_404(ContactMessage, pk=pk)
+        obj.delete()
+        return Response(
+            {"message": "Contact message deleted"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+
+@api_view(["GET", "POST", "DELETE"])
+def create_inquiry(request, pk=None):
+
+    if request.method == "GET":
+        qs = CpuInquiry.objects.all().order_by("-created_at")
+        serializer = CpuInquirySerializer(qs, many=True)
+        return Response(serializer.data)
+
+    if request.method == "POST":
+        serializer = CpuInquirySerializer(data=request.data)
+        if serializer.is_valid():
+            obj = serializer.save()
+
+            send_telegram(
+                settings.TELEGRAM_CPU_BOT_TOKEN,
+                settings.TELEGRAM_CPU_CHAT_ID,
+                f"CPU Inquiry\n\n"
+                f"Name: {obj.full_name}\n"
+                f"Email: {obj.email}\n"
+                f"Phone: {obj.phone}\n"
+                f"CPU: {obj.cpu_model}\n"
+                f"Quantity: {obj.quantity}\n"
+                f"RAM: {obj.ram}\n"
+                f"Storage: {obj.storage}\n"
+                f"Message: {obj.message}"
+            )
+
+            return Response(
+                {"message": "Inquiry submitted successfully"},
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == "DELETE":
+        obj = get_object_or_404(CpuInquiry, pk=pk)
+        obj.delete()
+        return Response(
+            {"message": "CPU inquiry deleted"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
 
 class MOUListAPIView(ListAPIView):
@@ -116,8 +185,8 @@ class GalleryImageListAPIView(ListAPIView):
 
 class ProjectListAPIView(APIView):
     def get(self, request):
-        projects = Project.objects.all()
-        serializer = ProjectSerializer(projects, many=True)
+        qs = Project.objects.all()
+        serializer = ProjectSerializer(qs, many=True)
         return Response(serializer.data)
 
 
@@ -126,31 +195,3 @@ class CommunityItemListAPIView(ListAPIView):
 
     def get_queryset(self):
         return CommunityItem.objects.filter(section="giveback").order_by("-created_at")
-
-
-@api_view(["POST"])
-def create_inquiry(request):
-    serializer = CpuInquirySerializer(data=request.data)
-    if serializer.is_valid():
-        obj = serializer.save()
-
-        send_telegram(
-            settings.TELEGRAM_CPU_BOT_TOKEN,
-            settings.TELEGRAM_CPU_CHAT_ID,
-            f"🖥 CPU Inquiry\n\n"
-            f"Name: {obj.full_name}\n"
-            f"Email: {obj.email}\n"
-            f"Phone Number: {obj.phone}\n"
-            f"CPU: {obj.cpu_model}\n"
-            f"Quantity: {obj.quantity}\n"
-            f"RAM: {obj.ram}\n"
-            f"Storage: {obj.storage}\n"
-            f"Message: {obj.message}"
-        )
-
-        return Response(
-            {"message": "Inquiry submitted successfully"},
-            status=status.HTTP_201_CREATED,
-        )
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
