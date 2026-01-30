@@ -140,6 +140,7 @@ def create_inquiry(request):
             f"🖥 CPU Inquiry\n\n"
             f"Name: {obj.full_name}\n"
             f"Email: {obj.email}\n"
+            f"Phone Number: {obj.phone}\n"
             f"CPU: {obj.cpu_model}\n"
             f"Quantity: {obj.quantity}\n"
             f"RAM: {obj.ram}\n"

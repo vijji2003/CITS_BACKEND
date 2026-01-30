@@ -159,6 +159,7 @@ class CommunityItem(models.Model):
 class CpuInquiry(models.Model):
     full_name = models.CharField(max_length=100)
     email = models.EmailField()
+    phone = models.CharField(max_length=10)
     cpu_model = models.CharField(max_length=100)
     quantity = models.IntegerField()
     ram = models.CharField(max_length=50)
