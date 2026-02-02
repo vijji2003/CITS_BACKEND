@@ -23,11 +23,16 @@ from django.http import HttpResponse
 
 def home(request):
     return HttpResponse("Backend is running")
+def favicon_view(request):
+    return HttpResponse(status=204)
+
 
 urlpatterns = [
     path("", home),
     path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
+    path('favicon.ico', favicon_view),
+
 ]
 
 if settings.DEBUG:
