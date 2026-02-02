@@ -12,6 +12,8 @@ class CareerApplication(models.Model):
     resume = models.FileField(upload_to='resume/')
     applied_at = models.DateTimeField(auto_now_add=True)
 
+    #
+
     def __str__(self):
         return self.full_name
 
